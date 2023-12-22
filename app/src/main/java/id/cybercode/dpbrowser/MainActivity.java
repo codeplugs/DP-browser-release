@@ -268,31 +268,8 @@ public class MainActivity extends AppCompatActivity {
 
             //  ==================== START HERE: THIS CODE BLOCK IS TO ENABLE FILE DOWNLOAD FROM THE WEB. YOU CAN COMMENT IT OUT IF YOUR APPLICATION DOES NOT REQUIRE FILE DOWNLOAD. IT WAS ADDED ON REQUEST ======//
 
-        webView.setDownloadListener((url, userAgent, contentDisposition, mimetype, contentLength) -> {
-            String filename = URLUtil.guessFileName(url, contentDisposition, mimetype);
-            new AlertDialog.Builder(MainActivity.this)
-                    .setTitle("Download")
-                    .setMessage(String.format("Filename: %s\nSize: %.2f MB\nURL: %s",
-                            filename,
-                            contentLength / 1024.0 / 1024.0,
-                            url))
-                    .setPositiveButton("Download", (dialog, which) -> startDownload(url, filename))
-                    .setNeutralButton("Open", (dialog, which) -> {
-                        Intent i = new Intent(Intent.ACTION_VIEW);
-                        i.setData(Uri.parse(url));
-                        try {
-                            startActivity(i);
-                        } catch (ActivityNotFoundException e) {
-                            new AlertDialog.Builder(MainActivity.this)
-                                    .setTitle("Open")
-                                    .setMessage("Can't open files of this type. Try downloading instead.")
-                                    .setPositiveButton("OK", (dialog1, which1) -> {})
-                                    .show();
-                        }
-                    })
-                    .setNegativeButton("Cancel", (dialog, which) -> {})
-                    .show();
-        });
+
+
         //  ==================== END HERE: THIS CODE BLOCK IS TO ENABLE FILE DOWNLOAD FROM THE WEB. YOU CAN COMMENT IT OUT IF YOUR APPLICATION DOES NOT REQUIRE FILE DOWNLOAD. IT WAS ADDED ON REQUEST ======//
 
 
@@ -459,9 +436,34 @@ public class MainActivity extends AppCompatActivity {
         getCurrentWebView().requestFocus();
     }
 
-    private void newTab(String url) {
+    private void newTab(String urls) {
 
         WebView webView = createWebView();
+        webView.setDownloadListener((url, userAgent, contentDisposition, mimetype, contentLength) -> {
+            String filename = URLUtil.guessFileName(url, contentDisposition, mimetype);
+            new AlertDialog.Builder(MainActivity.this)
+                    .setTitle("Download")
+                    .setMessage(String.format("Filename: %s\nSize: %.2f MB\nURL: %s",
+                            filename,
+                            contentLength / 1024.0 / 1024.0,
+                            url))
+                    .setPositiveButton("Download", (dialog, which) -> startDownload(url, filename))
+                    .setNeutralButton("Open", (dialog, which) -> {
+                        Intent i = new Intent(Intent.ACTION_VIEW);
+                        i.setData(Uri.parse(url));
+                        try {
+                            startActivity(i);
+                        } catch (ActivityNotFoundException e) {
+                            new AlertDialog.Builder(MainActivity.this)
+                                    .setTitle("Open")
+                                    .setMessage("Can't open files of this type. Try downloading instead.")
+                                    .setPositiveButton("OK", (dialog1, which1) -> {})
+                                    .show();
+                        }
+                    })
+                    .setNegativeButton("Cancel", (dialog, which) -> {})
+                    .show();
+        });
         webView.setOnLongClickListener(new View.OnLongClickListener() {
             @Override
             public boolean onLongClick(View v) {
@@ -582,7 +584,7 @@ public class MainActivity extends AppCompatActivity {
                             .show();
                     break;
                 case 3:
-                    //startDownload(url, null);
+                    startDownload(url, null);
                     break;
                 case 4:
                     showLongPressMenu(null, imageUrl);
@@ -592,7 +594,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startDownload(String url, String filename) {
-        
+
         if (filename == null) {
             filename = URLUtil.guessFileName(url, null, null);
         }
