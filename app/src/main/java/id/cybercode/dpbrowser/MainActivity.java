@@ -5,6 +5,7 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.app.DownloadManager;
 import android.content.ActivityNotFoundException;
 import android.content.ClipData;
@@ -23,6 +24,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.util.Patterns;
 import android.util.TypedValue;
@@ -37,6 +39,7 @@ import android.webkit.URLUtil;
 import android.webkit.MimeTypeMap;
 import android.webkit.SslErrorHandler;
 import android.webkit.URLUtil;
+import android.webkit.ValueCallback;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebChromeClient;
@@ -47,18 +50,25 @@ import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.AutoCompleteTextView;
+
+import java.io.File;
+import java.io.IOException;
 import java.lang.Object;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 
 import android.view.View;
 import android.widget.ImageView;
 import android.view.View.OnClickListener;
 
 public class MainActivity extends AppCompatActivity {
-
+    private ValueCallback<Uri> mUploadMessage;
+    private Uri mCapturedImageURI = null;
+    private ValueCallback<Uri[]> mFilePathCallback;
+    private String mCameraPhotoPath;
     TextView txtTabCount;
     WebView webView;
     ProgressBar progressBar;
@@ -74,6 +84,19 @@ public class MainActivity extends AppCompatActivity {
         WebView webView;
 
     }
+
+    private boolean appInstalledOrNot(String uri) {
+        PackageManager pm = getPackageManager();
+        try {
+            pm.getPackageInfo(uri, PackageManager.GET_ACTIVITIES);
+            return true;
+        } catch (PackageManager.NameNotFoundException e) {
+        }
+
+        return false;
+    }
+
+
     boolean hasOrRequestPermission(String permission, String explanation, int requestCode) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             return true;
@@ -109,6 +132,14 @@ public class MainActivity extends AppCompatActivity {
         }
         return  aURL;
 
+    }
+
+
+    public static String abbreviateString(String input, int maxLength) {
+        if (input.length() <= maxLength)
+            return input;
+        else
+            return input.substring(0, maxLength-2) + ".....";
     }
 
     static class ArrayAdapterWithCurrentItem<T> extends ArrayAdapter<T> {
@@ -279,6 +310,8 @@ public class MainActivity extends AppCompatActivity {
 
     public class myWebViewclient extends WebViewClient{
 
+
+
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
 
@@ -304,8 +337,18 @@ public class MainActivity extends AppCompatActivity {
 //                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(fallbackUrl));
 //                    context.startActivity(browserIntent);
                         }
+                        if( URLUtil.isNetworkUrl(url) ) {
+                            return false;
+                        }
+                        if (appInstalledOrNot(url)) {
+                             intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                            startActivity( intent );
+                        } else {
+                            // do something if app is not installed
+                        }
 
-                        return true;
+
+                    return true;
                     }
                 } catch (URISyntaxException e) {
 
@@ -319,7 +362,7 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
-            Toast.makeText(getApplicationContext(), "No internet connection", Toast.LENGTH_LONG).show();
+            //Toast.makeText(getApplicationContext(), "No internet connection", Toast.LENGTH_LONG).show();
             //webView.loadUrl("file:///android_asset/lost.html");
         }
 
@@ -377,7 +420,7 @@ public class MainActivity extends AppCompatActivity {
     private void showOpenTabs() {
         String[] items = new String[tabs.size()];
         for (int i = 0; i < tabs.size(); i++) {
-            items[i] = tabs.get(i).webView.getTitle();
+            items[i] = abbreviateString(tabs.get(i).webView.getTitle(),35);
         }
 
         AlertDialog.Builder alertDialog = new AlertDialog.Builder(MainActivity.this, R.style.MyDialogTheme);
@@ -387,8 +430,7 @@ public class MainActivity extends AppCompatActivity {
 
         ArrayAdapter<String> adapter = new ArrayAdapterWithCurrentItem<>(
                 MainActivity.this,
-                android.R.layout.simple_list_item_1,
-                items,
+                android.R.layout.simple_list_item_1, items,
                 currentTabIndex);
 
 
@@ -643,6 +685,32 @@ public class MainActivity extends AppCompatActivity {
 
         webView.setWebChromeClient(new WebChromeClient() {
             @Override
+            public boolean onCreateWindow(WebView view, boolean dialog, boolean userGesture, Message resultMsg){
+
+                WebView webPadwindow = createWebView();
+                webPadwindow.setLayoutParams(new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.MATCH_PARENT, RelativeLayout.LayoutParams.MATCH_PARENT));
+
+                webPadwindow.setVisibility(View.GONE);
+                Tab tab = new Tab(webPadwindow);
+                tabs.add(tab);
+                webPads.addView(webPadwindow);
+                setTabCountText(tabs.size());
+                switchToTab(tabs.size() - 1);
+
+
+                WebView.WebViewTransport transport = (WebView.WebViewTransport) resultMsg.obj;
+                transport.setWebView(webPadwindow);
+                resultMsg.sendToTarget();
+                return true;// falseを返す.
+
+            }
+
+
+
+
+
+
+            @Override
             public void onProgressChanged(WebView view, int newProgress) {
                 super.onProgressChanged(view, newProgress);
 
@@ -651,6 +719,8 @@ public class MainActivity extends AppCompatActivity {
                 } else {
                     progressBar.setProgress(newProgress);
                 }
+
+
             }
         });
 
