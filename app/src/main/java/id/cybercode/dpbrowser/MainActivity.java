@@ -314,50 +314,16 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, String url) {
-
-            view.loadUrl(url);
-
-            if (url.startsWith("intent://")) {
-                try {
-                    Context context = view.getContext();
-                    Intent intent = Intent.parseUri(url, Intent.URI_INTENT_SCHEME);
-
-                    if (intent != null) {
-                        view.stopLoading();
-
-                        PackageManager packageManager = context.getPackageManager();
-                        ResolveInfo info = packageManager.resolveActivity(intent, PackageManager.MATCH_DEFAULT_ONLY);
-                        if (info != null) {
-                            context.startActivity(intent);
-                        } else {
-                            String fallbackUrl = intent.getStringExtra("browser_fallback_url");
-                            view.loadUrl(fallbackUrl);
-
-                            // or call external broswer
-//                    Intent browserIntent = new Intent(Intent.ACTION_VIEW, Uri.parse(fallbackUrl));
-//                    context.startActivity(browserIntent);
-                        }
-                        if( URLUtil.isNetworkUrl(url) ) {
-                            return false;
-                        }
-                        if (appInstalledOrNot(url)) {
-                             intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-                            startActivity( intent );
-                        } else {
-                            // do something if app is not installed
-                        }
-
-
-                    return true;
-                    }
-                } catch (URISyntaxException e) {
-
-                        Log.e("i", "Can't resolve intent://", e);
-
-                }
+            if( URLUtil.isNetworkUrl(url) ) {
+                return false;
             }
-
-            return false;
+            if (appInstalledOrNot(url)) {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                startActivity( intent );
+            } else {
+                // do something if app is not installed
+            }
+            return true;
         }
 
         @Override
@@ -667,8 +633,10 @@ public class MainActivity extends AppCompatActivity {
 
 
         final WebSettings settings = webView.getSettings();
+        settings.setSupportMultipleWindows(true);
+        //settings.setJavaScriptCanOpenWindowsAutomatically(true);
         settings.setJavaScriptEnabled(true);
-        settings.setSupportZoom(false);
+        settings.setSupportZoom(true);
         settings.setDomStorageEnabled(true);
         settings.setCacheMode(WebSettings.LOAD_DEFAULT);
         settings.setAllowUniversalAccessFromFileURLs(true);
