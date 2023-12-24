@@ -29,14 +29,17 @@ android:background="#918f8a"
         android:id="@+id/webPad"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/et">
+        android:layout_below="@id/et"
+        android:layout_above="@id/toolbarBottom"
+        >
 
 
 
     <WebView
         android:id="@+id/web"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="match_parent"
+         />
 
 </RelativeLayout>
 
@@ -74,7 +77,6 @@ android:background="#918f8a"
         android:focusable="true"
         android:focusableInTouchMode="true"
         android:id="@+id/toolbarBottom"
-        
         android:layout_width="match_parent"
         android:layout_alignParentBottom="true"
         android:layout_height="?actionBarSize"
